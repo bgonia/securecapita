@@ -5,6 +5,7 @@ import io.getarrays.securecapita.domain.HttpResponse;
 import io.getarrays.securecapita.domain.User;
 import io.getarrays.securecapita.domain.UserPrincipal;
 import io.getarrays.securecapita.dto.UserDTO;
+import io.getarrays.securecapita.dtomapper.UserDTOMapper;
 import io.getarrays.securecapita.form.LoginForm;
 import io.getarrays.securecapita.provider.TokenProvider;
 import io.getarrays.securecapita.service.RoleService;
@@ -78,7 +79,7 @@ public class UserResource {
     }
 
     private UserPrincipal getUserPrinciPal(UserDTO user) {
-        return new UserPrincipal(userService.getUser(user.getEmail()), roleService.getRoleByUserId(user.getId()).getPermission());
+        return new UserPrincipal(UserDTOMapper.toUser(userService.getUserByEmail(user.getEmail())), roleService.getRoleByUserId(user.getId()).getPermission());
     }
 
 
