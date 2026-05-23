@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.nio.file.AccessDeniedException;
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
-public class HandleException extends ResponseEntityExceptionHandler implements ErrorController {
+public class HandleException extends ResponseEntityExceptionHandler{
 
     @Nullable
     @Override
@@ -112,20 +113,6 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
     }
 
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> exception(Exception exception) {
-        log.error(exception.getMessage());
-        return new ResponseEntity<>(
-                HttpResponse.builder()
-                        .timeStamp(LocalDateTime.now().toString())
-                        .reason(exception.getMessage() != null ?
-                                (exception.getMessage().contains("expected 1, actual 0") ? "Record not found" : exception.getMessage()) : "Some error occurred")
-                        .developerMessage(exception.getMessage())
-                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                        .build(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
     @ExceptionHandler(EmptyResultDataAccessException.class)
     public ResponseEntity<Object> apiException(EmptyResultDataAccessException exception) {
         log.error(exception.getMessage());
@@ -138,7 +125,6 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
                         .statusCode(HttpStatus.BAD_REQUEST.value())
                         .build(), HttpStatus.BAD_REQUEST);
     }
-
 
 
     @ExceptionHandler(DisabledException.class)
@@ -167,12 +153,30 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
                         .build(), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> exception(Exception exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(LocalDateTime.now().toString())
+                        .reason(exception.getMessage() != null ?
+                                (exception.getMessage().contains("expected 1, actual 0") ? "Record not found" : exception.getMessage()) : "Some error occurred")
+                        .developerMessage(exception.getMessage())
+                        .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                        .build(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
-
-
-
-
-
-
-
+    @Nullable
+    @Override
+    protected ResponseEntity<Object> handleNoResourceFoundException(NoResourceFoundException exception, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return ResponseEntity.badRequest().body(
+                HttpResponse.builder()
+                        .timeStamp(LocalDateTime.now().toString())
+                        .reason("There is no mapping for this path " + exception.getResourcePath() + " on the server")
+                        .status(HttpStatus.BAD_REQUEST)
+                        .statusCode(HttpStatus.BAD_REQUEST.value())
+                        .build()
+        );
+    }
 }

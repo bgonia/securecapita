@@ -1,5 +1,6 @@
 package io.getarrays.securecapita.domain;
 
+import io.getarrays.securecapita.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -9,15 +10,17 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import static io.getarrays.securecapita.dtomapper.UserDTOMapper.fromUser;
+
 @RequiredArgsConstructor
 public class UserPrincipal implements UserDetails {
 
     private final User user;
-    private final String permissions;
+    private final Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Arrays.stream(permissions.split(","))
+        return Arrays.stream(this.role.getPermission().split(","))
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
     }
@@ -50,6 +53,10 @@ public class UserPrincipal implements UserDetails {
     @Override
     public String getUsername() {
         return this.user.getEmail();
+    }
+
+    public UserDTO getUser(){
+        return fromUser(this.user, role);
     }
 
 }
