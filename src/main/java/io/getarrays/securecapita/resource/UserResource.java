@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -30,6 +31,7 @@ import java.util.Map;
 import static io.getarrays.securecapita.utils.ExceptionUtils.processError;
 import static org.springframework.security.authentication.UsernamePasswordAuthenticationToken.unauthenticated;
 
+@Slf4j
 @RestController
 @RequestMapping(path = "/user")
 @RequiredArgsConstructor
@@ -92,23 +94,6 @@ public class UserResource {
         );
     }
 
-    private URI getUri() {
-        return URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/user/verify/<userId>").toUriString());
-    }
-
-    private ResponseEntity<HttpResponse> sendResponse(UserDTO user) {
-        return ResponseEntity.ok().body(
-                HttpResponse.builder()
-                        .timeStamp(LocalDateTime.now().toString())
-                        .data(Map.of("user", user, "access_token", tokenProvider.createAccessToken(getUserPrinciPal(user)),
-                                "refresh_token", tokenProvider.createRefreshToken(getUserPrinciPal(user))))
-                        .message("Login Success")
-                        .status(HttpStatus.OK)
-                        .statusCode(HttpStatus.OK.value())
-                        .build()
-        );
-    }
-
     @GetMapping("/resetpassword/{email}")
     private ResponseEntity<HttpResponse> resetPassword(@PathVariable("email") String email) {
         userService.resetPassword(email);
@@ -146,6 +131,37 @@ public class UserResource {
                 HttpResponse.builder()
                         .timeStamp(LocalDateTime.now().toString())
                         .message("Password reset successfully.")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    @GetMapping("/verify/account/{key}")
+    private ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {
+        UserDTO user = userService.verifyAccountKey(key);
+        System.out.println(userService.verifyAccountKey(key).isEnabled());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(LocalDateTime.now().toString())
+                        .message(userService.verifyAccountKey(key).isEnabled() ? "Account already verified" : "Account verified")
+                        .status(HttpStatus.OK)
+                        .statusCode(HttpStatus.OK.value())
+                        .build()
+        );
+    }
+
+    private URI getUri() {
+        return URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/user/verify/<userId>").toUriString());
+    }
+
+    private ResponseEntity<HttpResponse> sendResponse(UserDTO user) {
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(LocalDateTime.now().toString())
+                        .data(Map.of("user", user, "access_token", tokenProvider.createAccessToken(getUserPrinciPal(user)),
+                                "refresh_token", tokenProvider.createRefreshToken(getUserPrinciPal(user))))
+                        .message("Login Success")
                         .status(HttpStatus.OK)
                         .statusCode(HttpStatus.OK.value())
                         .build()
